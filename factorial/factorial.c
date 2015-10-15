@@ -12,10 +12,12 @@ int main()
 {
     int n = 0;
 
+    printf("Provide a number:\n");
     scanf("%d", &n);
+
     long val=factorial(n);
     
-    printf("factorial: %ld", val);
+    printf("factorial: %ld\n", val);
 
     return 0;
 }
