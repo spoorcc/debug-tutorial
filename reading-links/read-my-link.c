@@ -1,40 +1,68 @@
+#include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define MAX_BUF_SIZE (100)
 #define FIRST_FILE_NAME "foo.0"
 #define SECOND_FILE_NAME "foo.1"
-#define MY_SYM_LINK "foo.link"
+#define MY_SYM_LINK "foo"
+
+void switch_sym_link(const char* file_name_ptr);
 
 int main()
 {
 
-    /* Create a file: foo.0 */
-    f0 = open(FIRST_FILE_NAME, O_RDWR | OCREAT, S_IRUSR | S_IRGRP | S_IROTH); 
+    /* Create two files: foo.0, foo.1 */
+    FILE *f0 = fopen(FIRST_FILE_NAME, "w"); 
+    FILE *f1 = fopen(SECOND_FILE_NAME, "w"); 
 
-    /* Create a second file: foo.1 */
-    f1 = open(SECOND_FILE_NAME, O_RDWR | OCREAT, S_IRUSR | S_IRGRP | S_IROTH); 
+    /* Create symlink to first file: foo_link --> foo.0 */
+    symlink(FIRST_FILE_NAME, MY_SYM_LINK);
 
-    /* create symlink to first file: foo_link --> foo.0 */
-    symlink("my_sym_link", FIRST_FILE_NAME);
+    /* Switch symlink from first to second file foo.0 --> foo.1 */
+    switch_sym_link(MY_SYM_LINK);
 
-    /* switch symlink from first to second file foo --> foo.1 */
-
+    fclose(f0);
+    fclose(f1);
+    
+    return 0;
 }
 
-int switch_sym_link(char* file_name_ptr)
+/**
+ * \brief Moves symlink to point to next file with integer extension 
+ *
+ * \example
+ *    foo --> foo.0
+ *            foo.1
+ * 
+ *            foo.0
+ *    foo --> foo.1
+ *
+ */
+void switch_sym_link(const char* file_name_ptr)
 {
    char buf[MAX_BUF_SIZE];
    int bufsize = 0;
    int file_index = 0;
 
-   bufsize = readlink(file_name_ptr, buf, MAX_BUF_SIZE);
+   memset(buf, atoi("9"),MAX_BUF_SIZE); 
 
+   bufsize = readlink(file_name_ptr, buf, MAX_BUF_SIZE);
    buf[bufsize+1] = '\0';
 
+   printf("Currently pointing to %s\n", buf);
 
+   remove(file_name_ptr);
+
+   /* +1 to skip over dot */
    int index_of_int = strlen(file_name_ptr+1); 
 
-   file_index = atoi(buf[index_of_int]);
+   /* Convert integer extension chars to int */
+   file_index = atoi(buf + index_of_int);
 
+   sprintf(buf, "%s.%d", file_name_ptr, ++file_index);
+   symlink(buf, file_name_ptr);
 
+   printf("Now pointing to %s\n", buf);
 }
